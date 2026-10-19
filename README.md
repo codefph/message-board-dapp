@@ -16,6 +16,14 @@
 
 ## 本地开发
 
+在项目根目录创建 `.env.local`，并填入自己的 Infura Project ID：
+
+```env
+VITE_INFURA_PROJECT_ID=your_infura_project_id
+```
+
+可复制 `.env.example` 作为模板。Vite 会将 `VITE_` 前缀变量暴露到前端，因此此 ID 不是可保密的凭据；请在 Infura 控制台限制允许的来源域名和用量。未配置时，应用会明确报错，不会回退到硬编码 RPC 地址。
+
 ```bash
 npm install
 npm run dev
