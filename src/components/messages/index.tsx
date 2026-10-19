@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+  useChainId,
+  useConnection,
   useReadContract,
+  useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi"
@@ -62,6 +65,7 @@ function MessageList() {
     abi: messageContractAbi,
     functionName: "getMessages",
     args: [offset, PAGE_SIZE],
+    chainId: sepolia.id,
     query: {
       refetchOnMount: "always",
     },
@@ -235,6 +239,10 @@ function SubmitMessage({
   onSubmitted: () => void
 }) {
   const [text, setText] = useState("")
+  const { isConnected } = useConnection()
+  const currentChainId = useChainId()
+  const switchChain = useSwitchChain()
+  const isWrongNetwork = isConnected && currentChainId !== sepolia.id
   const writeContract = useWriteContract()
   const { data: hash, isPending, error } = writeContract
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -248,6 +256,7 @@ function SubmitMessage({
       functionName: "leaveMessage",
       args: [text],
       value: parseEther("0.001"),
+      chainId: sepolia.id,
     })
   }
 
@@ -262,6 +271,23 @@ function SubmitMessage({
 
   return (
     <>
+      {isWrongNetwork && (
+        <Alert
+          className="mb-4"
+          type="warning"
+          showIcon
+          message="请切换到 Sepolia 网络后再提交留言"
+          description={switchChain.error?.message}
+          action={
+            <Button
+              loading={switchChain.isPending}
+              onClick={() => switchChain.mutate({ chainId: sepolia.id })}
+            >
+              切换到 Sepolia
+            </Button>
+          }
+        />
+      )}
       <textarea
         placeholder="请输入留言"
         className="p-5 w-full h-300px bg-white border border-slate-200 rounded-xl"
@@ -271,6 +297,7 @@ function SubmitMessage({
       {error?.message && <Alert type="error" title={error.message} />}
       <Button
         loading={isConfirming || isPending}
+        disabled={isWrongNetwork || switchChain.isPending}
         onClick={leaveMessage}
       >
         {isPending ? "请在钱包确认..." : isConfirming ? "确认中..." : "提交"}
